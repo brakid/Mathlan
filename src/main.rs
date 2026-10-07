@@ -1,6 +1,6 @@
 mod mathlan;
 
-use mathlan::execution::{execute, parse};
+use mathlan::virtualmachine::{execute, parse};
 
 fn modify_text(text: &mut str) {
     text.make_ascii_lowercase();
