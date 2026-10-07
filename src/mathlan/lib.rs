@@ -1,0 +1,40 @@
+use std::{arch::asm, fmt};
+
+#[derive(Debug)]
+pub struct Error {
+    pub message: String,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Error: {})", self.message)
+    }
+}
+
+impl std::error::Error for Error {}
+
+pub fn print_text(text: &str) -> Result<(), Error> {
+    let text_length: u64 = text.len() as u64;
+    let mut result: u64;
+    unsafe {
+        asm!(
+            "mov x0, #1",
+            "mov x1, {0}",
+            "mov x2, {1}",
+            "mov x16, #4",
+            "svc #0x80;",
+            in(reg) text.as_ptr(),
+            in(reg) text_length,
+            out("x0") result,
+            out("x1") _,
+            out("x2") _,
+            out("x3") _,
+            
+        );
+    }
+
+    if result != text_length {
+        return Err(Error{ message: "Writing failed".to_string()});
+    }
+    Ok(())
+}
