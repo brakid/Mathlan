@@ -1,10 +1,8 @@
 mod mathlan;
 
-use mathlan::virtualmachine::{execute, parse};
+use std::{env, fs::read_to_string};
 
-fn modify_text(text: &mut str) {
-    text.make_ascii_lowercase();
-}
+use mathlan::virtualmachine::{execute, parse};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     /*
@@ -21,32 +19,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         1 2 - print 1 2 swap - print
     "#)?;*/
 
-    /*
-        let a = 10
-        if a > 0
-            print a
-            a--
-            jump to if
-        else
-        // print "Done"
-        putc 68 
-        putc 111 
-        putc 110 
-        putc 101 
-        end
-    */
-    let program = parse(r#"
-        10 dup 0 > if 
-        dup print 1 - -9 
-        jump 
-        else 
-        68 putc 111 putc 110 putc 101 putc 10 putc
-        end
-    "#)?;
-    
-    for (index, operation) in program.iter().enumerate() {
-        println!("{:02}: {:?}", index, operation);
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 || args.len() > 3 {
+        eprintln!("Program: {} [v] <program file>", args[0]);
+        std::process::exit(1);
     }
+
+    let mut verbose = false;
+    let path: &String;
+
+    match args[1].as_str() {
+        "v" => { verbose = true; path = &args[2]; },
+        _ => { path = &args[1]; },
+    }
+
+    let program_code = read_to_string(path)?;
+    let program = parse(&program_code)?;
+    
+    if verbose {
+        println!("Parsed program");
+        for (index, operation) in program.iter().enumerate() {
+            println!("{:02}: {:?}", index, operation);
+        }
+    }
+
     execute(&program)?;
 
     Ok(())

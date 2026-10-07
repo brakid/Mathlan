@@ -7,3 +7,4 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 
 ## Missing features
 * heap memory (store load) -> 1 10 store (write value 1 to byte 10 on the heap)
+* not -> if 0 -> 1, else: -> 0

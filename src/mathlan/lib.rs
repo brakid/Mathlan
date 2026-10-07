@@ -13,6 +13,7 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+#[allow(dead_code)]
 pub fn print_text(text: &str) -> Result<(), Error> {
     let text_length: u64 = text.len() as u64;
     let mut result: u64;

@@ -1,0 +1,6 @@
+10 dup 0 > if 
+dup print 1 - -9 
+jump 
+else 
+68 putc 111 putc 110 putc 101 putc 10 putc
+end
