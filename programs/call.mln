@@ -1,0 +1,92 @@
+# [ret]
+printDone:
+    'D' 100 store
+    'o' 101 store
+    'n' 102 store
+    'e' 103 store
+    10 104 store
+    5 100 printText call
+    0 # [ret value]
+    swap # [value ret]
+    ret # [value]
+
+# [ret]
+printError:
+    'E' 105 store
+    'r' 106 store
+    'r' 107 store
+    'o' 108 store
+    'r' 109 store
+    10 110 store
+    6 105 printText call
+    0 # [ret value]
+    swap # [value ret]
+    ret # [value]
+
+# [text_len text_address ret]
+printText:
+    rot # [ret text_len text_address]
+    swap # [ret text_address text_len]
+printTextLoop:
+    swap # [ret text_len text_address]
+    dup # [ret text_len text_address text_address]
+    load # [ret text_len text_address text_char]
+    putc # [ret text_len text_address]
+    1 + # [ret text_len text_address+]
+    swap # [ret text_address+ text_len]
+    1 - # [ret text_address+ text_len-]
+    dup # [ret text_address+ text_len- text_len-]
+    0 > if # [ret text_address+ text_len-]
+        printTextLoop jump
+    else # [ret text_address+ text_len-]
+        drop # [ret text_address+]
+        drop # [ret]
+    end
+    ret
+
+# [value address ret]
+store2bytes:
+    rot # [ret value address]
+    swap # [ret address value]
+    dup # [ret address value value]
+    rot # [ret value address value]
+    swap # [ret value value address]
+    dup # [ret value value address address]
+    rot # [ret value address value address]
+    swap # [ret value address address value]
+    256 % # [ret value address address value_mod]
+    swap # [ret value address lsb_value address]
+    store # [ret value address]
+    1 + # [ret value address+1]
+    swap # [ret address+1 value]
+    256 / # [ret address+1 msb_value]
+    swap # [ret value_div address+1]
+    store # [ret]
+    ret
+
+# [address ret]
+load2bytes:
+    swap # [ret address]
+    dup # [ret address address]
+    1 +  # [ret address address+1]
+    load # [ret address msb_value]
+    256 * # [ret address msb_value]
+    swap # [ret msb_value address]
+    load # [ret msb_value lsb_value]
+    + # [ret value]
+    swap # [value ret]
+    ret # [value]
+
+main:
+    42
+    513
+    0
+    store2bytes call
+    printDone call
+    0 = if
+    else printError call drop
+    end
+    0 load2bytes call
+    print
+    print
+    printError call drop

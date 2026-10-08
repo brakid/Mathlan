@@ -2,7 +2,8 @@ mod mathlan;
 
 use std::{env, fs::read_to_string};
 
-use mathlan::virtualmachine::{execute, parse};
+use mathlan::virtualmachine::execute;
+use mathlan::parser::parse;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     /*
@@ -36,15 +37,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let program_code = read_to_string(path)?;
     if verbose {
+        println!("Program:");
         println!("{}", program_code);
+        println!("-------");
     }
     let program = parse(&program_code)?;
     
     if verbose {
-        println!("Parsed program");
-        for (index, operation) in program.iter().enumerate() {
-            println!("{:02}: {:?}", index, operation);
+        println!("Parsed program:");
+        for (index, operation) in program.operations.iter().enumerate() {
+            println!("  {:02}: {:?}", index, operation);
         }
+        println!("\nLabels:");
+        println!("  {:?}", program.labels);
+        println!("-------");
     }
 
     execute(&program, verbose)?;

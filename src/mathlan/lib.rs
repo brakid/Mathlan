@@ -1,4 +1,4 @@
-use std::{arch::asm, fmt};
+use std::{arch::asm, collections::HashMap, fmt};
 
 #[derive(Debug)]
 pub struct Error {
@@ -12,6 +12,46 @@ impl fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+#[derive(Default, Debug, PartialEq)]
+pub enum OpCode {
+    #[default] OpAdd,
+    OpSub,
+    OpMul,
+    OpDiv,
+    OpMod,
+    OpWord,
+    OpPush,
+    OpSmaller,
+    OpEqual,
+    OpLarger,
+    OpIf,
+    OpElse,
+    OpEnd,
+    OpSwap,
+    OpRot,
+    OpDup,
+    OpDrop,
+    OpJmp,
+    OpCall,
+    OpRet,
+    OpStore,
+    OpLoad,
+    OpHalt,
+}
+
+#[derive(Default, Debug)]
+pub struct Operation {
+    pub op_code: OpCode,
+    pub value: i64, // Standard: 0
+    pub name: String, // Standard: ""
+}
+
+#[derive(Debug)]
+pub struct Program {
+    pub operations: Vec<Operation>,
+    pub labels: HashMap<String, usize>,
+}
 
 #[allow(dead_code)]
 pub fn print_text(text: &str) -> Result<(), Error> {
