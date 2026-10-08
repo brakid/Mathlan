@@ -9,7 +9,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
     let mut stack: Vec<i64> = vec![];
     let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
 
-    let mut program_counter: usize = *program.labels.get("main").ok_or(Error{ message: "Missing main label".to_string() })?;
+    let mut program_counter: usize = program.labels.get("main").ok_or(Error{ message: "Missing main label".to_string() })?.location;
     while program_counter < operations.len() {
         let operation = &operations[program_counter];
         let mut increment_program_counter = true;
@@ -161,7 +161,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                         stack.push(result);
                     }
                     l if program.labels.contains_key(&l.to_string()) => {
-                        let target_address = *program.labels.get(l).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) })? as i64;
+                        let target_address = program.labels.get(l).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) })?.location as i64;
                         stack.push(target_address);
                     }
                     _ => {

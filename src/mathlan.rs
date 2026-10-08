@@ -1,4 +1,5 @@
+pub mod compiler;
 pub mod lib;
-pub mod virtualmachine;
 pub mod parser;
 pub mod preprocessor;
+pub mod virtualmachine;

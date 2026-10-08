@@ -1,0 +1,17 @@
+!include stdlib.mln
+
+main:
+    1 2 + print
+    'H' 0 store
+    'e' 1 store
+    'l' 2 store
+    'l' 3 store
+    'o' 4 store
+    32 5 store
+    'W' 6 store
+    'o' 7 store
+    'r' 8 store
+    'l' 9 store
+    'd' 10 store
+    10 11 store
+    12 0 printText call

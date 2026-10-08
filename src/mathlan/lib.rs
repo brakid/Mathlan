@@ -47,10 +47,23 @@ pub struct Operation {
     pub name: String, // Standard: ""
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum LabelType {
+    Undefined,
+    Jump,
+    Call
+}
+
+#[derive(Debug)]
+pub struct Label {
+    pub location: usize,
+    pub label_type: LabelType,
+}
+
 #[derive(Debug)]
 pub struct Program {
     pub operations: Vec<Operation>,
-    pub labels: HashMap<String, usize>,
+    pub labels: HashMap<String, Label>,
 }
 
 #[allow(dead_code)]

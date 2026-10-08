@@ -27,9 +27,7 @@ printError:
 
 main:
     42
-    513
-    0
-    store2bytes call
+    513 0 store2bytes call
     printDone call
     0 = if
     else printError call drop
