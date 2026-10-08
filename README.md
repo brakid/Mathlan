@@ -5,6 +5,9 @@
 
 Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_language))
 
+### Implememnted:
+* heap memory (store load) -> 1 10 store (write value 10 to byte 1 on the heap)
+* modulo - allows to split i64 values into u8 chunks to store and load
+
 ## Missing features
-* heap memory (store load) -> 1 10 store (write value 1 to byte 10 on the heap)
 * not -> if 0 -> 1, else: -> 0

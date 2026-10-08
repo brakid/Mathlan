@@ -2,12 +2,15 @@ use std::fmt::format;
 
 use super::lib::Error;
 
+const MEMORY_SIZE: usize = 32000;
+
 #[derive(Default, Debug, PartialEq)]
 pub enum OpCode {
     #[default] OpAdd,
     OpSub,
     OpMul,
     OpDiv,
+    OpMod,
     OpCall,
     OpPush,
     OpSmaller,
@@ -19,6 +22,8 @@ pub enum OpCode {
     OpSwap,
     OpDup,
     OpJmp,
+    OpStore,
+    OpLoad,
 }
 
 #[derive(Default, Debug)]
@@ -32,7 +37,11 @@ pub fn parse(program_code: &str) -> Result<Vec<Operation>, Error> {
     let mut program: Vec<Operation> = vec![];
     let lines = program_code.trim().lines();
     for (line_index, line) in lines.into_iter().enumerate() {
-        let operations = line.trim().split(" ").into_iter();
+        let line = line.trim();
+        if line.len() == 0 {
+            continue;
+        }
+        let operations = line.split(" ").into_iter();
         for (index, operation) in operations.enumerate() {
             let operation = operation.trim();
             match operation {
@@ -40,6 +49,7 @@ pub fn parse(program_code: &str) -> Result<Vec<Operation>, Error> {
                 "-" => program.push(Operation { op_code: OpCode::OpSub, ..Operation::default() }),
                 "*" => program.push(Operation { op_code: OpCode::OpMul, ..Operation::default() }),
                 "/" => program.push(Operation { op_code: OpCode::OpDiv, ..Operation::default() }),
+                "%" => program.push(Operation { op_code: OpCode::OpMod, ..Operation::default() }),
                 "<" => program.push(Operation { op_code: OpCode::OpSmaller, ..Operation::default() }),
                 "=" => program.push(Operation { op_code: OpCode::OpEqual, ..Operation::default() }),
                 ">" => program.push(Operation { op_code: OpCode::OpLarger, ..Operation::default() }),
@@ -49,6 +59,8 @@ pub fn parse(program_code: &str) -> Result<Vec<Operation>, Error> {
                 "swap" => program.push(Operation { op_code: OpCode::OpSwap, ..Operation::default() }),
                 "dup" => program.push(Operation { op_code: OpCode::OpDup, ..Operation::default() }),
                 "jump" => program.push(Operation { op_code: OpCode::OpJmp, ..Operation::default() }),
+                "store" => program.push(Operation { op_code: OpCode::OpStore, ..Operation::default() }),
+                "load" => program.push(Operation { op_code: OpCode::OpLoad, ..Operation::default() }),
                 o if o.parse::<i64>().is_ok() => {
                     let value: i64 = operation.parse().map_err(|_| Error{ message: format(format_args!("[line: {}, token index: {}] Expected i64 number: {}", line_index, index, operation)) })?;
                     program.push(Operation { op_code: OpCode::OpPush, value: value, ..Operation::default() });
@@ -63,8 +75,9 @@ pub fn parse(program_code: &str) -> Result<Vec<Operation>, Error> {
     Ok(program)
 }
 
-pub fn execute(program: &[Operation]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn execute(program: &[Operation], verbose: bool) -> Result<(), Box<dyn std::error::Error>> {
     let mut stack: Vec<i64> = vec![];
+    let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
 
     let mut program_counter: usize = 0;
     while program_counter < program.len() {
@@ -92,6 +105,12 @@ pub fn execute(program: &[Operation]) -> Result<(), Box<dyn std::error::Error>> 
                 let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
                 let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
                 let result = op2 / op1;
+                stack.push(result);
+            }
+            OpCode::OpMod => {
+                let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let result = op2 % op1;
                 stack.push(result);
             }
             OpCode::OpSmaller => {
@@ -155,6 +174,23 @@ pub fn execute(program: &[Operation]) -> Result<(), Box<dyn std::error::Error>> 
                 program_counter = target.try_into()?;
                 program_counter -= 1;
             }
+            OpCode::OpStore => {
+                let address: usize = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?.try_into()?;
+                let value = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let truncated_value: u8 = (value & 0xFF).try_into()?;
+                if address > memory.len() {
+                    return Err(Box::new(Error{ message: format(format_args!("[line: {}] Memory address out of bounds: {}", program_counter, address)) }));
+                }
+                memory[address] = truncated_value;
+            }
+            OpCode::OpLoad => {
+                let address: usize = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?.try_into()?;
+                if address > memory.len() {
+                    return Err(Box::new(Error{ message: format(format_args!("[line: {}] Memory address out of bounds: {}", program_counter, address)) }));
+                }
+                let value = memory[address];
+                stack.push(value as i64);
+            }
             OpCode::OpCall => {
                 match operation.name.as_str() {
                     "print" => {
@@ -186,6 +222,11 @@ pub fn execute(program: &[Operation]) -> Result<(), Box<dyn std::error::Error>> 
         }
         program_counter += 1;
     }
-
+    
+    if verbose {
+        for (index, value) in memory[0..10].iter().enumerate() {
+            println!("{}: {}", index, value);
+        }
+    }
     Ok(())
 }

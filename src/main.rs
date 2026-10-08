@@ -35,6 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let program_code = read_to_string(path)?;
+    if verbose {
+        println!("{}", program_code);
+    }
     let program = parse(&program_code)?;
     
     if verbose {
@@ -44,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    execute(&program)?;
+    execute(&program, verbose)?;
 
     Ok(())
 }
