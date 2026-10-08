@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if is_run_mode {
         execute(&program, verbose)?;
     } else {
-        let c_code = compile(&program)?;
+        let c_code = compile(&program, verbose)?;
         write("./compiled/main.c", c_code)?;
     }
 

@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::format};
 
 use super::lib::{Error, LabelType::{Call, Jump}, OpCode, Program};
 
-pub fn compile(program: &Program) -> Result<String, Box<dyn std::error::Error>> {
+pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::error::Error>> {
     let operations = &program.operations;
     let mut c_code = String::new();
     c_code += "#include <stdio.h>\n";
@@ -23,13 +23,23 @@ pub fn compile(program: &Program) -> Result<String, Box<dyn std::error::Error>> 
         }
     }
 
+    for (label_name, label) in program.labels.iter() {
+        if label.label_type == Call {
+            c_code += format(format_args!("void {}(void);\n", label_name)).as_str();
+        }
+    }
+
     let mut var_name_counter: i64 = 0;
 
     for (_, (label_name, label)) in program.labels.iter().enumerate() {
-        println!("Processing: {}: {:?}", label_name, label);
+        if verbose { 
+            println!("Processing: {}: {:?}", label_name, label); 
+        }
         if label_name == "main" || label.label_type == Call {
             if label_name == "main" {
-                println!("Processing main");
+                if verbose { 
+                    println!("Processing main");
+                }
                 c_code += format(format_args!("int {}() {{\n", label_name)).as_str();
             } else {        
                 c_code += format(format_args!("void {}() {{\n", label_name)).as_str();
@@ -37,11 +47,13 @@ pub fn compile(program: &Program) -> Result<String, Box<dyn std::error::Error>> 
             let mut operation_index = label.location;
             let mut operation = &operations[operation_index];
             while operation_index < operations.len() && operation.op_code != OpCode::OpRet {
-                println!("Processing: {}: {:?}", operation_index, operation);
+                if verbose { 
+                    println!("Processing: {}: {:?}", operation_index, operation);
+                }
                 operation = &operations[operation_index];
                 if jump_labels_by_index.contains_key(&(operation_index as i64)) {
                     let name = jump_labels_by_index.get(&(operation_index as i64)).unwrap();
-                    c_code += format(format_args!("{}:\n", name)).as_str();
+                    c_code += format(format_args!("{}:;\n", name)).as_str();
                 }
                 match operation.op_code {
                     OpCode::OpAdd => {
@@ -150,7 +162,9 @@ pub fn compile(program: &Program) -> Result<String, Box<dyn std::error::Error>> 
                     }
                     OpCode::OpJmp => {
                         let previous_operation = &operations[operation_index - 1];
-                        assert!(previous_operation.op_code == OpCode::OpWord);
+                        if previous_operation.op_code != OpCode::OpWord {
+                            return Err(Box::new(Error{ message: format(format_args!("[line: {}] Expected Label/Word before: {:?}", operation_index, previous_operation)) }));
+                        }
                         c_code += format(format_args!("goto {};\n", previous_operation.name)).as_str();
                     }
                     OpCode::OpRet => {
@@ -160,7 +174,9 @@ pub fn compile(program: &Program) -> Result<String, Box<dyn std::error::Error>> 
                     }
                     OpCode::OpCall => {
                         let previous_operation = &operations[operation_index - 1];
-                        assert!(previous_operation.op_code == OpCode::OpWord);
+                        if previous_operation.op_code != OpCode::OpWord {
+                            return Err(Box::new(Error{ message: format(format_args!("[line: {}] Expected Label/Word before: {:?}", operation_index, previous_operation)) }));
+                        }
                         c_code += "stack[stackPointer++] = 0xDEAD;\n";
                         c_code += format(format_args!("{}();\n", previous_operation.name)).as_str();
                     }
