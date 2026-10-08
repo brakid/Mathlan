@@ -1,25 +1,12 @@
 mod mathlan;
 
-use std::{env, fs::read_to_string};
+use std::env;
 
 use mathlan::virtualmachine::execute;
 use mathlan::parser::parse;
+use mathlan::preprocessor::load_program;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /*
-    let program = parse(r#"
-        35 34 + print
-        72 2 / 2 * print
-        2 2 exp print
-        1 2 < print
-        1 2 = print
-        1 2 > print
-        1 1 = if 100 print else 200 print end
-        1 2 = if 101 print else 202 print end
-        1 dup print 2 + print
-        1 2 - print 1 2 swap - print
-    "#)?;*/
-
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 || args.len() > 3 {
@@ -28,14 +15,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut verbose = false;
-    let path: &String;
+    let path: String;
 
     match args[1].as_str() {
-        "v" => { verbose = true; path = &args[2]; },
-        _ => { path = &args[1]; },
+        "v" => { verbose = true; path = args[2].clone(); },
+        _ => { path = args[1].clone(); },
     }
 
-    let program_code = read_to_string(path)?;
+    let program_code = load_program(path)?;
     if verbose {
         println!("Program:");
         println!("{}", program_code);

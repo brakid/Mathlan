@@ -10,6 +10,7 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 * modulo - allows to split i64 values into u8 chunks to store and load
 * labels & function calls
 * comments
+* includes - for a rudimentary stdlib of functions
 
 ## Missing features
 * not -> if 0 -> 1, else: -> 0
