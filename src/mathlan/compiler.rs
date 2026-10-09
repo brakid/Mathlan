@@ -29,6 +29,10 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
         }
     }
 
+    for (constant_name, value) in program.constants.iter() {
+        c_code += format(format_args!("int64_t {} = {};\n", constant_name, value)).as_str();
+    }
+
     let mut var_name_counter: i64 = 0;
 
     for (_, (label_name, label)) in program.labels.iter().enumerate() {
@@ -195,7 +199,11 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         var_name_counter += 1;
                     }
                     OpCode::OpPush => {
-                        c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.value)).as_str();
+                        if operation.name.len() > 0 {
+                            c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.name)).as_str();
+                        } else {
+                            c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.value)).as_str();
+                        }
                     }
                     OpCode::OpHalt => {
                         c_code += "exit(0);\n"

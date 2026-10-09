@@ -64,6 +64,7 @@ pub struct Label {
 pub struct Program {
     pub operations: Vec<Operation>,
     pub labels: HashMap<String, Label>,
+    pub constants: HashMap<String, i64>,
 }
 
 #[allow(dead_code)]

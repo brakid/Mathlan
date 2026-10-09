@@ -1,5 +1,8 @@
 !include stdlib.mln
 
+text_start= 0
+text_length= 12
+
 main:
     1 2 + print
     'H' 0 store
@@ -14,4 +17,4 @@ main:
     'l' 9 store
     'd' 10 store
     10 11 store
-    12 0 printText call
+    text_length text_start printText call

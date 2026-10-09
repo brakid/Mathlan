@@ -170,7 +170,12 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 }
             }
             OpCode::OpPush => {
-                stack.push(operation.value);
+                if operation.name.len() > 0 {
+                    let value = *program.constants.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown constant: {}", program_counter, operation.name)) })?;
+                    stack.push(value);
+                } else {
+                    stack.push(operation.value);
+                }
             }
             OpCode::OpHalt => {
                 println!("Halting program");

@@ -5,6 +5,7 @@ use super::lib::{Error, Label, LabelType, LabelType::{Call, Jump, Undefined}, Op
 pub fn parse(program_code: &str) -> Result<Program, Error> {
     let mut operations: Vec<Operation> = vec![];
     let mut labels: HashMap<String, Label> = HashMap::new();
+    let mut constants: HashMap<String, i64> = HashMap::new();
     
     let lines = program_code.trim().lines();
     for (line_index, line) in lines.into_iter().enumerate() {
@@ -12,11 +13,14 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
         if line.len() == 0 {
             continue;
         }
-        let op_codes = line.split(" ").into_iter();
+        let op_codes: Vec<&str> = line.split(" ").into_iter().collect();
         let mut last_label: Option<String> = None;
-        for (index, op_code) in op_codes.enumerate() {
-            let op_code = op_code.trim();
+
+        let mut index = 0;
+        while index < op_codes.len() {
+            let op_code = op_codes[index].trim();
             if op_code.len() == 0 {
+                index += 1;
                 continue;
             }
             if op_code.starts_with("#") {
@@ -87,17 +91,30 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                     label_name.pop();
                     labels.insert(label_name, Label { location: operations.len(), label_type: LabelType::Undefined });
                 }
+                o if o.ends_with("=") => {
+                    let mut constant_name = o.trim().to_string();
+                    constant_name.pop();
+                    let constant_value_string = op_codes[index+1].trim();
+                    let constant_value: i64 = constant_value_string.parse().map_err(|_| Error{ message: format(format_args!("[line: {}, token index: {}] Expected i64 number: {}", line_index, index, constant_value_string)) })?;
+                    constants.insert(constant_name, constant_value);
+                    index += 1;
+                }
                 o if o.trim_matches('\'').parse::<char>().is_ok() => {
                     let c = o.trim_matches('\'').parse::<char>().map_err(|_| Error{ message: format(format_args!("[line: {}, token index: {}] Expected char: {}", line_index, index, o)) })?;
                     operations.push(Operation { op_code: OpCode::OpPush, value: c as i64, ..Operation::default() });
+                }
+                o if constants.contains_key(&o.to_string()) => {
+                    operations.push(Operation { op_code: OpCode::OpPush, name: o.to_string(), ..Operation::default() });
                 }
                 o => {
                     operations.push(Operation { op_code: OpCode::OpWord, name: o.to_string(), ..Operation::default() });
                     last_label = Option::Some(o.to_string());
                 },
             }
+            println!("{}, {}, {}", line_index, index, op_code);
+            index += 1;
         }
     }
 
-    Ok(Program { operations: operations, labels: labels })
+    Ok(Program { operations: operations, labels: labels, constants: constants })
 }

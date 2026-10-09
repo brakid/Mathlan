@@ -51,6 +51,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("\nLabels:");
         println!("  {:?}", program.labels);
         println!("-------");
+        println!("Constants:");
+        println!("  {:?}", program.constants);
+        println!("-------");
     }
 
     if is_run_mode {
@@ -61,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let output_directory = "./compiled/";
         let output_path = Path::new(output_directory).join(file.to_string() + ".c");
         let output_path = output_path.to_str().unwrap();
-        println!("Written poutput to: {}", output_path);
+        println!("Written output to: {}", output_path);
         write(output_path, c_code)?;
     }
 
