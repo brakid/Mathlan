@@ -2,6 +2,7 @@ mod mathlan;
 
 use std::fs::write;
 use std::env;
+use std::path::Path;
 
 use mathlan::compiler::compile;
 use mathlan::virtualmachine::execute;
@@ -34,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => { path = args[2].clone(); },
     }
 
-    let program_code = load_program(path)?;
+    let program_code = load_program(&path)?;
     if verbose {
         println!("Program:");
         println!("{}", program_code);
@@ -56,7 +57,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         execute(&program, verbose)?;
     } else {
         let c_code = compile(&program, verbose)?;
-        write("./compiled/main.c", c_code)?;
+        let file = Path::new(&path).file_name().unwrap().to_str().unwrap().split(".").next().unwrap();
+        let output_directory = "./compiled/";
+        let output_path = Path::new(output_directory).join(file.to_string() + ".c");
+        let output_path = output_path.to_str().unwrap();
+        println!("Written poutput to: {}", output_path);
+        write(output_path, c_code)?;
     }
 
     Ok(())
