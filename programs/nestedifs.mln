@@ -1,0 +1,24 @@
+// clip number to 5 .. 10 range
+clip:
+    swap
+    dup
+    10 < if
+        dup
+        5 > if
+            print
+        else
+            drop
+            5 print
+        end
+    else
+        drop
+        10 print
+    end
+    ret
+
+main:
+    1 clip call
+    5 clip call
+    7 clip call
+    10 clip call
+    11 clip call

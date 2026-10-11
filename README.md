@@ -12,7 +12,8 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 * comments
 * includes - for a rudimentary stdlib of functions
 * translating code to C for native compilation (using forward declarations for function calls)
+* support for nested ifs - VM requires else branches (even if empty)
+* not -> if 0 -> 1, else: -> 0 - logical operators (&& || not)
 
 ## Missing features
-* not -> if 0 -> 1, else: -> 0
-* nested loops & ifs - can be simulated by function calls
+* 

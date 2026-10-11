@@ -14,7 +14,6 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
             continue;
         }
         let op_codes: Vec<&str> = line.split(" ").into_iter().collect();
-        let mut last_label: Option<String> = None;
 
         let mut index = 0;
         while index < op_codes.len() {
@@ -35,6 +34,9 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 "<" => operations.push(Operation { op_code: OpCode::OpSmaller, ..Operation::default() }),
                 "=" => operations.push(Operation { op_code: OpCode::OpEqual, ..Operation::default() }),
                 ">" => operations.push(Operation { op_code: OpCode::OpLarger, ..Operation::default() }),
+                "&&" => operations.push(Operation { op_code: OpCode::OpAnd, ..Operation::default() }),
+                "||" => operations.push(Operation { op_code: OpCode::OpOr, ..Operation::default() }),
+                "not" => operations.push(Operation { op_code: OpCode::OpNot, ..Operation::default() }),
                 "if" => operations.push(Operation { op_code: OpCode::OpIf, ..Operation::default() }),
                 "else" => operations.push(Operation { op_code: OpCode::OpElse, ..Operation::default() }),
                 "end" => operations.push(Operation { op_code: OpCode::OpEnd, ..Operation::default() }),
@@ -43,42 +45,36 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 "dup" => operations.push(Operation { op_code: OpCode::OpDup, ..Operation::default() }),
                 "drop" => operations.push(Operation { op_code: OpCode::OpDrop, ..Operation::default() }),
                 "jump" => {
-                    let new_last_label = last_label.take();
-                    
-                    if new_last_label.is_some() {
-                        let label_name = new_last_label.ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding label found", line_index, index)) })?;
-                        let label = labels.get_mut(&label_name).ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No label with name found: {}", line_index, index, label_name)) })?;
-                        match &label.label_type {
-                            Undefined | Jump => label.label_type = Jump,
-                            t => {
-                                return Err(Error{ message: format(format_args!("[line: {}, token index: {}] Jump Label {} is already set to type: {:?}", line_index, index, label_name, t)) });
-                            }
-                        }
-                        operations.push(Operation { op_code: OpCode::OpJmp, ..Operation::default() });
-                        
-                    } else {
-                        return Err(Error{ message: format(format_args!("[line: {}, token index: {}] No label preceeding jump", line_index, index)) });
+                    let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;
+                    if prev_op_code.op_code != OpCode::OpWord {
+                        return Err(Error { message: format(format_args!("[line: {}, token index: {}] Expected previous op_code to be a word", line_index, index)) });
                     }
+                    let label_name = prev_op_code.name;
+                    let label = labels.get_mut(&label_name).ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No label with name found: {}", line_index, index, label_name)) })?;
+                    match &label.label_type {
+                        Undefined | Call => label.label_type = Jump,
+                        t => {
+                            return Err(Error{ message: format(format_args!("[line: {}, token index: {}] Call Label {} is already set to type: {:?}", line_index, index, label_name, t)) });
+                        }
+                    }
+                    operations.push(Operation { op_code: OpCode::OpJmp, name: label_name, ..Operation::default() });
                 },
                 "store" => operations.push(Operation { op_code: OpCode::OpStore, ..Operation::default() }),
                 "load" => operations.push(Operation { op_code: OpCode::OpLoad, ..Operation::default() }),
                 "call" => {
-                    let new_last_label = last_label.take();
-                    
-                    if new_last_label.is_some() {
-                        let label_name = new_last_label.ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding label found", line_index, index)) })?;
-                        let label = labels.get_mut(&label_name).ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No label with name found: {}", line_index, index, label_name)) })?;
-                        match &label.label_type {
-                            Undefined | Call => label.label_type = Call,
-                            t => {
-                                return Err(Error{ message: format(format_args!("[line: {}, token index: {}] Call Label {} is already set to type: {:?}", line_index, index, label_name, t)) });
-                            }
-                        }
-                        operations.push(Operation { op_code: OpCode::OpCall, ..Operation::default() });
-                        
-                    } else {
-                        return Err(Error{ message: format(format_args!("[line: {}, token index: {}] No label preceeding jump", line_index, index)) });
+                    let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;
+                    if prev_op_code.op_code != OpCode::OpWord {
+                        return Err(Error { message: format(format_args!("[line: {}, token index: {}] Expected previous op_code to be a word", line_index, index)) });
                     }
+                    let label_name = prev_op_code.name;
+                    let label = labels.get_mut(&label_name).ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No label with name found: {}", line_index, index, label_name)) })?;
+                    match &label.label_type {
+                        Undefined | Call => label.label_type = Call,
+                        t => {
+                            return Err(Error{ message: format(format_args!("[line: {}, token index: {}] Call Label {} is already set to type: {:?}", line_index, index, label_name, t)) });
+                        }
+                    }
+                    operations.push(Operation { op_code: OpCode::OpCall, name: label_name, ..Operation::default() });
                 },
                 "ret" => operations.push(Operation { op_code: OpCode::OpRet, ..Operation::default() }),
                 "halt" => operations.push(Operation { op_code: OpCode::OpHalt, ..Operation::default() }),
@@ -108,7 +104,6 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 }
                 o => {
                     operations.push(Operation { op_code: OpCode::OpWord, name: o.to_string(), ..Operation::default() });
-                    last_label = Option::Some(o.to_string());
                 },
             }
             println!("{}, {}, {}", line_index, index, op_code);

@@ -63,32 +63,68 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 let result = if op2 > op1 { 1 } else { 0 };
                 stack.push(result);
             }
+            OpCode::OpAnd => {
+                let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let result = if op1 != 0 && op2 != 0 { 1 } else { 0 };
+                stack.push(result);
+            }
+            OpCode::OpOr => {
+                let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let result = if op1 != 0 || op2 != 0 { 1 } else { 0 };
+                stack.push(result);
+            }
+            OpCode::OpNot => {
+                let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let result = if op == 0 { 1 } else { 0 };
+                stack.push(result);
+            }
             OpCode::OpIf => {
                 let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
                 if op != 1 {
+                    // find else
                     let if_line = program_counter;
-                    while program_counter < operations.len() && operations[program_counter].op_code != OpCode::OpElse {
-                        //println!("Skipping: {} {:?}", index, program[index]);
-                        program_counter += 1;
+                    let mut search_line = program_counter + 1;
+                    let mut opening_ifs = 0;
+                    while search_line < operations.len() && (operations[search_line].op_code != OpCode::OpElse || opening_ifs > 0) {
+                        //println!("Skipping: {} {:?}", search_line, operations[search_line]);
+                        if operations[search_line].op_code == OpCode::OpIf {
+                            opening_ifs += 1;
+                        }
+                        if operations[search_line].op_code == OpCode::OpElse {
+                            opening_ifs -= 1;
+                        }
+                        search_line += 1;
                     }
-                    if operations[program_counter].op_code != OpCode::OpElse {
+                    if search_line == operations.len() || operations[search_line].op_code != OpCode::OpElse {
                         return Err(Box::new(Error { message: format(format_args!("[line: {}] No else branch found for if", if_line)) }));
                     }
+                    program_counter = search_line;
+                    // this leads to landing AFTER the else op_code
                 }
             }
             OpCode::OpElse => {
+                // if we land in an else then we ran through the if branch - and need to skip to the end of the else branch
                 let else_line = program_counter;
-                while program_counter < operations.len() && operations[program_counter].op_code != OpCode::OpEnd {
-                    //println!("Skipping: {} {:?}", index, program[index]);
-                    program_counter += 1;
+                let mut search_line = program_counter + 1;
+                let mut opening_ifs = 0;
+                while search_line < operations.len() && (operations[search_line].op_code != OpCode::OpEnd || opening_ifs > 0) {
+                    //println!("Skipping: {} {:?}", program_counter, operations[program_counter]);
+                    if operations[search_line].op_code == OpCode::OpIf {
+                        opening_ifs += 1;
+                    }
+                    if operations[search_line].op_code == OpCode::OpEnd {
+                        opening_ifs -= 1;
+                    }
+                    search_line += 1;
                 }
-                if operations[program_counter].op_code != OpCode::OpEnd {
+                if search_line == operations.len() || operations[search_line].op_code != OpCode::OpEnd {
                     return Err(Box::new(Error { message: format(format_args!("[line: {}] No end found for if-else", else_line)) }));
                 }
+                program_counter = search_line;
             }
-            OpCode::OpEnd => {
-                //return Err(Error { message: format(format_args!("[line: {}] Should not end here", index)) });
-            }
+            OpCode::OpEnd => { /* NOOP */ }
             OpCode::OpSwap => {
                 let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
                 let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
@@ -112,7 +148,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
             }
             OpCode::OpJmp => {
-                let target_address = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let target_address = program.labels.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, operation.name)) })?.location as i64;
                 program_counter = target_address.try_into()?;
                 increment_program_counter = false;
             }
@@ -121,7 +157,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 program_counter = target_address.try_into()?;
             }
             OpCode::OpCall => {
-                let target_address = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                let target_address = program.labels.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, operation.name)) })?.location as i64;
                 stack.push(program_counter as i64);
                 program_counter = target_address.try_into()?;
                 increment_program_counter = false;
@@ -161,8 +197,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                         stack.push(result);
                     }
                     l if program.labels.contains_key(&l.to_string()) => {
-                        let target_address = program.labels.get(l).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) })?.location as i64;
-                        stack.push(target_address);
+                        program.labels.get(l).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) })?;
                     }
                     _ => {
                         return Err(Box::new(Error{ message: format(format_args!("[line: {}] Unknown Call name: {:?}", program_counter, operation.name)) }));

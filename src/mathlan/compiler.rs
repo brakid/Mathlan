@@ -124,6 +124,28 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         c_code += format(format_args!("stack[stackPointer++] = var{} > var{} ? 1 : 0;\n", counter2, counter1)).as_str();
                         var_name_counter += 2;
                     }
+                    OpCode::OpAnd => {
+                        let counter1 = var_name_counter;
+                        let counter2 = var_name_counter + 1;
+                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter1)).as_str();
+                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter2)).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = (var{} != 0) && (var{} != 0) ? 1 : 0;\n", counter1, counter2)).as_str();
+                        var_name_counter += 2;
+                    }
+                    OpCode::OpOr => {
+                        let counter1 = var_name_counter;
+                        let counter2 = var_name_counter + 1;
+                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter1)).as_str();
+                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter2)).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = (var{} != 0) || (var{} != 0) ? 1 : 0;\n", counter1, counter1)).as_str();
+                        var_name_counter += 2;
+                    }
+                    OpCode::OpNot => {
+                        let counter1 = var_name_counter;
+                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter1)).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = var{} == 0 ? 1 : 0;\n", counter1)).as_str();
+                        var_name_counter += 1;
+                    }
                     OpCode::OpIf => {
                          c_code += "if (stack[--stackPointer]) {\n";
                     }
@@ -165,11 +187,7 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         c_code += "--stackPointer;\n";
                     }
                     OpCode::OpJmp => {
-                        let previous_operation = &operations[operation_index - 1];
-                        if previous_operation.op_code != OpCode::OpWord {
-                            return Err(Box::new(Error{ message: format(format_args!("[line: {}] Expected Label/Word before: {:?}", operation_index, previous_operation)) }));
-                        }
-                        c_code += format(format_args!("goto {};\n", previous_operation.name)).as_str();
+                        c_code += format(format_args!("goto {};\n", operation.name)).as_str();
                     }
                     OpCode::OpRet => {
                         c_code += "stackPointer--;\n"; // ignore return address
@@ -177,12 +195,8 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         break;
                     }
                     OpCode::OpCall => {
-                        let previous_operation = &operations[operation_index - 1];
-                        if previous_operation.op_code != OpCode::OpWord {
-                            return Err(Box::new(Error{ message: format(format_args!("[line: {}] Expected Label/Word before: {:?}", operation_index, previous_operation)) }));
-                        }
                         c_code += "stack[stackPointer++] = 0xDEAD;\n";
-                        c_code += format(format_args!("{}();\n", previous_operation.name)).as_str();
+                        c_code += format(format_args!("{}();\n", operation.name)).as_str();
                     }
                     OpCode::OpStore => {
                         let counter1 = var_name_counter;
