@@ -16,4 +16,4 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 * not -> if 0 -> 1, else: -> 0 - logical operators (&& || not)
 
 ## Missing features
-* 
+* read inputs - getc
