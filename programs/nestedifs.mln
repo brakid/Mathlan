@@ -1,4 +1,4 @@
-// clip number to 5 .. 10 range
+# clip number to 5 .. 10 range
 clip:
     swap
     dup
