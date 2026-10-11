@@ -13,10 +13,9 @@ printTextLoop:
     dup # [ret text_address+ text_len- text_len-]
     0 > if # [ret text_address+ text_len-]
         printTextLoop jump
-    else # [ret text_address+ text_len-]
-        drop # [ret text_address+]
-        drop # [ret]
-    end
+    end # [ret text_address+ text_len-]
+    drop # [ret text_address+]
+    drop # [ret]
     ret
 
 # [value address ret]
