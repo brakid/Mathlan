@@ -22,3 +22,13 @@ main:
     7 clip call
     10 clip call
     11 clip call
+
+    # if without else and we skip the if branch
+    1 0 < if
+        1 1 = if
+            1 print
+        else
+            2 print
+        end
+    end
+    0 print

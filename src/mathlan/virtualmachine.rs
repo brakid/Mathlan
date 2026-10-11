@@ -86,19 +86,19 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                     // find else
                     let if_line = program_counter;
                     let mut search_line = program_counter + 1;
-                    let mut opening_ifs = 0;
-                    while search_line < operations.len() && (operations[search_line].op_code != OpCode::OpElse || opening_ifs > 0) {
+                    let mut nested_ifs = 0;
+                    while search_line < operations.len() && ((operations[search_line].op_code != OpCode::OpElse && operations[search_line].op_code != OpCode::OpEnd) || nested_ifs > 0) {
                         //println!("Skipping: {} {:?}", search_line, operations[search_line]);
                         if operations[search_line].op_code == OpCode::OpIf {
-                            opening_ifs += 1;
+                            nested_ifs += 1;
                         }
-                        if operations[search_line].op_code == OpCode::OpElse {
-                            opening_ifs -= 1;
+                        if operations[search_line].op_code == OpCode::OpEnd {
+                            nested_ifs -= 1;
                         }
                         search_line += 1;
                     }
-                    if search_line == operations.len() || operations[search_line].op_code != OpCode::OpElse {
-                        return Err(Box::new(Error { message: format(format_args!("[line: {}] No else branch found for if", if_line)) }));
+                    if search_line == operations.len() || (operations[search_line].op_code != OpCode::OpElse && operations[search_line].op_code != OpCode::OpEnd) {
+                        return Err(Box::new(Error { message: format(format_args!("[line: {}] No else branch or end found for if", if_line)) }));
                     }
                     program_counter = search_line;
                     // this leads to landing AFTER the else op_code
@@ -108,19 +108,19 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 // if we land in an else then we ran through the if branch - and need to skip to the end of the else branch
                 let else_line = program_counter;
                 let mut search_line = program_counter + 1;
-                let mut opening_ifs = 0;
-                while search_line < operations.len() && (operations[search_line].op_code != OpCode::OpEnd || opening_ifs > 0) {
+                let mut nested_ifs = 0;
+                while search_line < operations.len() && (operations[search_line].op_code != OpCode::OpEnd || nested_ifs > 0) {
                     //println!("Skipping: {} {:?}", program_counter, operations[program_counter]);
                     if operations[search_line].op_code == OpCode::OpIf {
-                        opening_ifs += 1;
+                        nested_ifs += 1;
                     }
                     if operations[search_line].op_code == OpCode::OpEnd {
-                        opening_ifs -= 1;
+                        nested_ifs -= 1;
                     }
                     search_line += 1;
                 }
                 if search_line == operations.len() || operations[search_line].op_code != OpCode::OpEnd {
-                    return Err(Box::new(Error { message: format(format_args!("[line: {}] No end found for if-else", else_line)) }));
+                    return Err(Box::new(Error { message: format(format_args!("[line: {}] No end found for else-branch", else_line)) }));
                 }
                 program_counter = search_line;
             }
