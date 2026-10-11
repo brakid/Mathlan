@@ -217,20 +217,20 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         let counter2 = var_name_counter + 1;
                         c_code += format(format_args!("int64_t address{} = stack[--stackPointer];\n", counter1)).as_str();
                         c_code += format(format_args!("uint64_t value{} = stack[--stackPointer];\n", counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}] = value{} | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+1] = value{} >> 8 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+2] = value{} >> 16 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+3] = value{} >> 24 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+4] = value{} >> 32 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+5] = value{} >> 40 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+6] = value{} >> 48 | 0xFF;\n", counter1, counter2)).as_str();
-                        c_code += format(format_args!("memory[address{}+7] = value{} >> 56 | 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}] = (value{} & 0xFF);\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+1] = (value{} >> 8) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+2] = (value{} >> 16) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+3] = (value{} >> 24) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+4] = (value{} >> 32) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+5] = (value{} >> 40) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+6] = (value{} >> 48) & 0xFF;\n", counter1, counter2)).as_str();
+                        c_code += format(format_args!("memory[address{}+7] = (value{} >> 56) & 0xFF;\n", counter1, counter2)).as_str();
                         var_name_counter += 2;
                     }
                     OpCode::OpLoad64 => {
                         let counter1 = var_name_counter;
                         c_code += format(format_args!("size_t address{} = stack[--stackPointer];\n", counter1)).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = memory[address{}] + memory[address{}+1] << 8 + memory[address{}+2] << 16  + memory[address{}+3] << 24 + memory[address{}+4] << 32 + memory[address{}+5] << 40 + memory[address{}+6] << 48  + memory[address{}+7] << 56;\n", counter1, counter1, counter1, counter1, counter1, counter1, counter1, counter1)).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = (int64_t)(((uint64_t)memory[address{}]) + (((uint64_t)memory[address{}+1]) << 8) + (((uint64_t)memory[address{}+2]) << 16) + (((uint64_t)memory[address{}+3]) << 24) + (((uint64_t)memory[address{}+4]) << 32) + (((uint64_t)memory[address{}+5]) << 40) + (((uint64_t)memory[address{}+6]) << 48) + (((uint64_t)memory[address{}+7]) << 56));\n", counter1, counter1, counter1, counter1, counter1, counter1, counter1, counter1)).as_str();
                         var_name_counter += 1;
                     }
                     OpCode::OpPush => {

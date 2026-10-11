@@ -2,3 +2,7 @@ main:
 513 dup 256 % 0 store 256 / 1 store
 
 0 load 1 load 256 * + print
+
+-9876543210 0 store64
+0 load64
+print 
