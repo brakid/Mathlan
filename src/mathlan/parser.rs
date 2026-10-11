@@ -61,6 +61,8 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 },
                 "store" => operations.push(Operation { op_code: OpCode::OpStore, ..Operation::default() }),
                 "load" => operations.push(Operation { op_code: OpCode::OpLoad, ..Operation::default() }),
+                "store64" => operations.push(Operation { op_code: OpCode::OpStore64, ..Operation::default() }),
+                "load64" => operations.push(Operation { op_code: OpCode::OpLoad64, ..Operation::default() }),
                 "call" => {
                     let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;
                     if prev_op_code.op_code != OpCode::OpWord {

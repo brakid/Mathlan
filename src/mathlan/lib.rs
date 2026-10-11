@@ -40,6 +40,8 @@ pub enum OpCode {
     OpRet,
     OpStore,
     OpLoad,
+    OpStore64,
+    OpLoad64,
     OpHalt,
 }
 

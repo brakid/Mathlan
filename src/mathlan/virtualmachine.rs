@@ -179,6 +179,29 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 let value = memory[address];
                 stack.push(value as i64);
             }
+            OpCode::OpStore64 => {
+                let address: usize = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?.try_into()?;
+                let value = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                if address + 7 > memory.len() {
+                    return Err(Box::new(Error{ message: format(format_args!("[line: {}] Memory address out of bounds: {}", program_counter, address)) }));
+                }
+                memory[address] = (value & 0xFF).try_into()?;
+                memory[address+1] = (value >> 8 & 0xFF).try_into()?;
+                memory[address+2] = (value >> 16 & 0xFF).try_into()?;
+                memory[address+3] = (value >> 24 & 0xFF).try_into()?;
+                memory[address+4] = (value >> 32 & 0xFF).try_into()?;
+                memory[address+5] = (value >> 40 & 0xFF).try_into()?;
+                memory[address+6] = (value >> 48 & 0xFF).try_into()?;
+                memory[address+7] = (value >> 56 & 0xFF).try_into()?;
+            }
+            OpCode::OpLoad64 => {
+                let address: usize = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?.try_into()?;
+                if address + 7 > memory.len() {
+                    return Err(Box::new(Error{ message: format(format_args!("[line: {}] Memory address out of bounds: {}", program_counter, address)) }));
+                }
+                let value: u64 = (memory[address] as u64) + ((memory[address+1] as u64) << 8) + ((memory[address+2] as u64) << 16) + ((memory[address+3] as u64) << 24) + ((memory[address+4] as u64) << 32) + ((memory[address+5] as u64) << 40) + ((memory[address+6] as u64) << 48) + ((memory[address+7] as u64) << 56);
+                stack.push(value as i64);
+            }
             OpCode::OpWord => {
                 match operation.name.as_str() {
                     "print" => {
@@ -197,7 +220,9 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                         stack.push(result);
                     }
                     l if program.labels.contains_key(&l.to_string()) => {
-                        program.labels.get(l).ok_or(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) })?;
+                        if program.labels.get(l).is_none() {
+                            return Err(Box::new(Error{ message: format(format_args!("[line: {}] Unknown label: {}", program_counter, l)) }));
+                        }
                     }
                     _ => {
                         return Err(Box::new(Error{ message: format(format_args!("[line: {}] Unknown Call name: {:?}", program_counter, operation.name)) }));
