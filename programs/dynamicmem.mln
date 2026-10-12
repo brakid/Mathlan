@@ -1,0 +1,11 @@
+!include stdlib.mln
+
+main:
+    initMemory call
+
+    10 allocateMemory call
+    print
+    20 allocateMemory call
+    print
+    3 allocateMemory call
+    print

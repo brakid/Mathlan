@@ -15,8 +15,8 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 * support for nested ifs - else branches can be skipped
 * not -> if 0 -> 1, else: -> 0 - logical operators (&& || not)
 * const string support
-* arbitrary stack rolls [a b c] 3 roll -> [b c a] 
+* arbitrary stack rolls [a b c] 3 roll -> [b c a]
+* malloc function - obtain n bytes of memory - linearly allocate new memory - never free
 
 ## Missing features
 * read inputs - getc
-* malloc function - obtain n bytes of memory

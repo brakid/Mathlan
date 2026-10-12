@@ -183,3 +183,29 @@ concatText: #[str1len str1addr str2len str2addr targetaddr ret] -> targetlen (st
     + #[ret totaltargetlen]
     swap #[totaltargetlen ret]
     ret #[totaltargetlen]
+
+# reserves memory locations -> growing for a dynamically allocated heap
+next_memory_index= 1000
+next_memory_start= 1008
+initMemory: #[ret]
+    next_memory_start next_memory_index store64 #[ret]
+    ret
+
+allocateMemory: #[bytecount ret] -> address
+    swap #[ret bytecount]
+    dup #[ret bytecount bytecount]
+    1 < if #[ret bytecount]
+        "InvalidBytecount" printText call #[ret bytecount]
+        drop #[ret]
+        -1 #[ret address]
+        swap #[address ret]
+    else
+        next_memory_index load64 #[ret bytecount nextaddr]
+        dup #[ret bytecount nextaddr nextaddr]
+        rot #[ret nextaddr nextaddr bytecount]
+        + #[ret nextaddr nextaddr+]
+        next_memory_index #[ret nextaddr nextaddr+ nextaddrptr]
+        store64 #[ret nextaddr]
+        swap #[nextaddr ret]
+    end
+    ret #[nextaddr]
