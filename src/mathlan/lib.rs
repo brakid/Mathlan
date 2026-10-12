@@ -51,6 +51,7 @@ pub struct Operation {
     pub value: i64, // Standard: 0
     pub name: String, // Standard: ""
     pub is_constant: bool, // Standard: false
+    pub is_numeric: bool, // Standard: true
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

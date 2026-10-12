@@ -1,4 +1,4 @@
-use std::{fmt::format};
+use std::fmt::format;
 
 use super::lib::{Error, OpCode, Program};
 
@@ -137,10 +137,11 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 for _ in 0..operation.value {
                     ops.push(stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
                 }
-                stack.push(*ops.get(0).ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
-                for _ in 1..ops.len() {
+                let oldest_op = ops.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+                for _ in 0..ops.len() {
                     stack.push(ops.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
                 }
+                stack.push(oldest_op);
             }
             OpCode::OpDup => {
                 let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
@@ -233,7 +234,9 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 }
             }
             OpCode::OpPush => {
-                if operation.name.len() > 0 {
+                if operation.is_numeric {
+                    stack.push(operation.value);
+                } else {
                     if operation.is_constant {
                         let value = *program.constants.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown constant: {}", program_counter, operation.name)) })?;
                         stack.push(value);
@@ -246,8 +249,6 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                         stack.push(string_section_pointer as i64);
                         string_section_pointer += string_value.len();
                     }
-                } else {
-                    stack.push(operation.value);
                 }
             }
             OpCode::OpHalt => {

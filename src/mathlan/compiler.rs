@@ -167,16 +167,19 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         var_name_counter += 2;
                     }
                     OpCode::OpRoll => {
-                        let counter = var_name_counter;
-                        c_code += format(format_args!("int64_t* ops{} = malloc(sizeof(int64_t) * {});\n", counter, operation.value)).as_str();
+                        let counter1 = var_name_counter;
+                        let counter2 = var_name_counter + 1;
+                        c_code += format(format_args!("int64_t* ops{} = malloc(sizeof(int64_t) * {});\n", counter1, operation.value)).as_str();
                         c_code += format(format_args!("for (int i = 0; i < {}; i++) {{\n", operation.value)).as_str();
-                        c_code += format(format_args!("    ops{}[i] = stack[--stackPointer];\n", counter)).as_str();
+                        c_code += format(format_args!("    ops{}[i] = stack[--stackPointer];\n", counter1)).as_str();
                         c_code += format(format_args!("}}\n")).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = ops{}[0];\n", counter)).as_str();
-                        c_code += format(format_args!("for (int i = {} - 1; i >= 1; i--) {{\n", operation.value)).as_str();
-                        c_code += format(format_args!("    stack[stackPointer++] = ops{}[i];\n", counter)).as_str();
+                        c_code += format(format_args!("int64_t oldest_op{} = ops{}[{} - 1];\n", counter2, counter1, operation.value)).as_str();
+                        c_code += format(format_args!("for (int i = {} - 2; i >= 0; i--) {{\n", operation.value)).as_str();
+                        c_code += format(format_args!("    stack[stackPointer++] = ops{}[i];\n", counter1)).as_str();
                         c_code += format(format_args!("}}\n")).as_str();
-                        c_code += format(format_args!("free(ops{});\n", counter)).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = oldest_op{};\n", counter2)).as_str();
+                        
+                        c_code += format(format_args!("free(ops{});\n", counter1)).as_str();
                         var_name_counter += 1;
                     }
                     OpCode::OpDup => {
@@ -237,7 +240,9 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         var_name_counter += 1;
                     }
                     OpCode::OpPush => {
-                        if operation.name.len() > 0 {
+                        if operation.is_numeric {
+                            c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.value)).as_str();
+                        } else {
                             if operation.is_constant {
                                 c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.name)).as_str();
                             } else {
@@ -246,8 +251,6 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                                 c_code += format(format_args!("stack[stackPointer++] = stringSectionPointer;\n")).as_str();
                                 c_code += format(format_args!("stringSectionPointer += {};\n", operation.name.len())).as_str();
                             }
-                        } else {
-                            c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.value)).as_str();
                         }
                     }
                     OpCode::OpHalt => {

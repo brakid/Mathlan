@@ -1,4 +1,72 @@
 !include stdlib.mln
 
+newlineaddr= 4000
+newLine:
+    10 newlineaddr store
+    1 newlineaddr
+    rot
+    ret
+
+spaceaddr= 4001
+concat1addr= 4002
+concat2addr= 4010
+vsText: #[ret] -> " !equals "
+    32 spaceaddr store #[ret]
+    1 spaceaddr #[ret str1len str1addr]
+    "!equals" #[ret str1len str1addr str2len str2addr]
+    concat1addr #[ret str1len str1addr str2len str2addr str3addr]
+    concatText call #[ret str3len]
+    concat1addr #[ret str3len str3addr]
+    32 spaceaddr store #[ret str3len str3addr]
+    1 spaceaddr #[ret str3len str3addr str1len str1addr]
+    concat2addr #[ret str3len str3addr str1len str1addr str4addr]
+    concatText call #[ret str4len]
+    concat2addr #[ret str4len str4addr]
+    rot #[str4len str4addr ret]
+    ret
+
+mainstr1addr= 4050
+mainstr2addr= 4100
+mainstr3addr= 4150
 main:
-    "Hello" printText call
+    "Hello" #[str1len str1addr]
+    dup #[str1len str1addr str1addr]
+    rot #[str1addr str1addr str1len]
+    dup #[str1addr str1addr str1len str1len]
+    4 roll #[str1addr str1len str1len str1addr]
+    "World" #[str1addr str1len str1len str1addr str2len str2addr]
+    dup #[str1addr str1len str1len str1addr str2len str2addr str2addr]
+    rot #[str1addr str1len str1len str1addr str2addr str2addr str2len]
+    dup #[str1addr str1len str1len str1addr str2addr str2addr str2len str2len]
+    4 roll #[str1addr str1len str1len str1addr str2addr str2len str2len str2addr]
+    6 roll #[str1addr str1len str1addr str2addr str2len str2len str2addr str1len]
+    6 roll #[str1addr str1len str2addr str2len str2len str2addr str1len str1addr]
+    compareText call #[str1addr str1len str2addr str2len result]
+    1 = if #[str1addr str1len str2addr str2len]
+        "Same" printText call #[str1addr str1len str2addr str2len]
+        drop
+        drop
+        drop
+        drop
+    else #[str1addr str1len str2addr str2len]
+        4 roll #[str1len str2addr str2len str1addr]
+        rot #[str1len str2len str1addr str2addr]
+        rot #[str1len str1addr str2addr str2len]
+        swap #[str1len str1addr str2len str2addr]
+        4 roll #[str1addr str2len str2addr str1len]
+        4 roll #[str2len str2addr str1len str1addr]
+        vsText call #[str2len str2addr str1len str1addr str3len str3addr]
+        mainstr1addr #[str2len str2addr str1len str1addr str3len str3addr str4addr]
+        concatText call #[str2len str2addr str4len]
+        mainstr1addr #[str2len str2addr str4len str4addr]
+        4 roll #[str2addr str4len str4addr str2len]
+        4 roll #[str4len str4addr str2len str2addr]
+        newLine call #[str4len str4addr str2len str2addr newlinelen newlineaddr]
+        mainstr2addr #[str4len str4addr str2len str2addr newlinelen newlineaddr str5addr]
+        concatText call #[str4len str4addr str5len]
+        mainstr2addr #[str4len str4addr str5len str5addr]
+        mainstr3addr #[str4len str4addr str5len str5addr str6addr]
+        concatText call #[str6len]
+        mainstr3addr #[str6len str6addr]
+        printText call
+    end

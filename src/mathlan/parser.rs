@@ -89,7 +89,7 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 "halt" => operations.push(Operation { op_code: OpCode::OpHalt, ..Operation::default() }),
                 o if o.parse::<i64>().is_ok() => {
                     let value: i64 = o.parse().map_err(|_| Error{ message: format(format_args!("[line: {}, token index: {}] Expected i64 number: {}", line_index, index, o)) })?;
-                    operations.push(Operation { op_code: OpCode::OpPush, value: value, ..Operation::default() });
+                    operations.push(Operation { op_code: OpCode::OpPush, value: value, is_numeric: true, ..Operation::default() });
                 }
                 o if o.ends_with(":") => {
                     let mut label_name = o.trim().to_string();
@@ -106,13 +106,13 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 }
                 o if o.trim_matches('\'').parse::<char>().is_ok() => {
                     let c = o.trim_matches('\'').parse::<char>().map_err(|_| Error{ message: format(format_args!("[line: {}, token index: {}] Expected char: {}", line_index, index, o)) })?;
-                    operations.push(Operation { op_code: OpCode::OpPush, value: c as i64, ..Operation::default() });
+                    operations.push(Operation { op_code: OpCode::OpPush, value: c as i64, is_numeric: true, ..Operation::default() });
                 }
                 o if constants.contains_key(&o.to_string()) => {
-                    operations.push(Operation { op_code: OpCode::OpPush, name: o.to_string(), is_constant: true, ..Operation::default() });
+                    operations.push(Operation { op_code: OpCode::OpPush, name: o.to_string(), is_constant: true, is_numeric: false, ..Operation::default() });
                 }
                 o if o.starts_with("\"") && o.ends_with("\"") => {
-                    operations.push(Operation { op_code: OpCode::OpPush, name: o.trim_matches('\"').to_string(), ..Operation::default() });
+                    operations.push(Operation { op_code: OpCode::OpPush, name: o.trim_matches('\"').to_string(), is_numeric: false, ..Operation::default() });
                 }
                 o => {
                     operations.push(Operation { op_code: OpCode::OpWord, name: o.to_string(), ..Operation::default() });

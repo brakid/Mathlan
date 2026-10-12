@@ -8,7 +8,7 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 ### Implemented:
 * heap memory (store load) -> 1 10 store (write value 10 into byte 1 on the heap)
 * modulo - allows to split i64 values into u8 chunks to store and load
-* labels & function calls
+* labels & function calls - functions need to end with 'ret' keyword
 * comments
 * includes - for a rudimentary stdlib of functions
 * translating code to C for native compilation (using forward declarations for function calls)
@@ -19,3 +19,4 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 
 ## Missing features
 * read inputs - getc
+* malloc function - obtain n bytes of memory
