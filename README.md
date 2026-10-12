@@ -14,6 +14,8 @@ Inspired by Forth: [Wikipedia](https://en.wikipedia.org/wiki/Forth_(programming_
 * translating code to C for native compilation (using forward declarations for function calls)
 * support for nested ifs - else branches can be skipped
 * not -> if 0 -> 1, else: -> 0 - logical operators (&& || not)
+* const string support
+* arbitrary stack rolls [a b c] 3 roll -> [b c a] 
 
 ## Missing features
 * read inputs - getc

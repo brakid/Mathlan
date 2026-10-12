@@ -41,7 +41,14 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 "else" => operations.push(Operation { op_code: OpCode::OpElse, ..Operation::default() }),
                 "end" => operations.push(Operation { op_code: OpCode::OpEnd, ..Operation::default() }),
                 "swap" => operations.push(Operation { op_code: OpCode::OpSwap, ..Operation::default() }),
-                "rot" => operations.push(Operation { op_code: OpCode::OpRot, ..Operation::default() }),
+                "rot" => operations.push(Operation { op_code: OpCode::OpRoll, value: 3, ..Operation::default() }),
+                "roll" => {
+                    let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;
+                    if prev_op_code.op_code != OpCode::OpPush && prev_op_code.name != "" {
+                        return Err(Error { message: format(format_args!("[line: {}, token index: {}] Expected previous op_code to be a push of a number", line_index, index)) });
+                    }
+                    operations.push(Operation { op_code: OpCode::OpRoll, value: prev_op_code.value, ..Operation::default() });
+                },
                 "dup" => operations.push(Operation { op_code: OpCode::OpDup, ..Operation::default() }),
                 "drop" => operations.push(Operation { op_code: OpCode::OpDrop, ..Operation::default() }),
                 "jump" => {
@@ -102,7 +109,10 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                     operations.push(Operation { op_code: OpCode::OpPush, value: c as i64, ..Operation::default() });
                 }
                 o if constants.contains_key(&o.to_string()) => {
-                    operations.push(Operation { op_code: OpCode::OpPush, name: o.to_string(), ..Operation::default() });
+                    operations.push(Operation { op_code: OpCode::OpPush, name: o.to_string(), is_constant: true, ..Operation::default() });
+                }
+                o if o.starts_with("\"") && o.ends_with("\"") => {
+                    operations.push(Operation { op_code: OpCode::OpPush, name: o.trim_matches('\"').to_string(), ..Operation::default() });
                 }
                 o => {
                     operations.push(Operation { op_code: OpCode::OpWord, name: o.to_string(), ..Operation::default() });

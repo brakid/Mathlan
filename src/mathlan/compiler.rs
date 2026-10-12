@@ -9,12 +9,14 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
     c_code += "#include <stdint.h>\n";
     c_code += "#include <stdlib.h>\n";
     c_code += "#include <math.h>\n";
+    c_code += "#include <string.h>\n";
     c_code += "#define STACK_SIZE 16000\n";
     c_code += "#define MEMORY_SIZE 16000\n";
 
     c_code += "int64_t stack[STACK_SIZE];\n";
     c_code += "size_t stackPointer = 0;\n";
     c_code += "uint8_t memory[MEMORY_SIZE];\n";
+    c_code += "size_t stringSectionPointer = 0;\n";
 
     let mut jump_labels_by_index: HashMap<i64, String> = HashMap::new();
     for (_, (label_name, label)) in program.labels.iter().enumerate() {
@@ -164,17 +166,18 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         c_code += format(format_args!("stack[stackPointer++] = var{};\n", counter2)).as_str();
                         var_name_counter += 2;
                     }
-                    OpCode::OpRot => {
-                        let counter1 = var_name_counter;
-                        let counter2 = var_name_counter + 1;
-                        let counter3 = var_name_counter + 2;
-                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter1)).as_str();
-                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter2)).as_str();
-                        c_code += format(format_args!("int64_t var{} = stack[--stackPointer];\n", counter3)).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = var{};\n", counter1)).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = var{};\n", counter3)).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = var{};\n", counter2)).as_str();
-                        var_name_counter += 3;
+                    OpCode::OpRoll => {
+                        let counter = var_name_counter;
+                        c_code += format(format_args!("int64_t* ops{} = malloc(sizeof(int64_t) * {});\n", counter, operation.value)).as_str();
+                        c_code += format(format_args!("for (int i = 0; i < {}; i++) {{\n", operation.value)).as_str();
+                        c_code += format(format_args!("    ops{}[i] = stack[--stackPointer];\n", counter)).as_str();
+                        c_code += format(format_args!("}}\n")).as_str();
+                        c_code += format(format_args!("stack[stackPointer++] = ops{}[0];\n", counter)).as_str();
+                        c_code += format(format_args!("for (int i = {} - 1; i >= 1; i--) {{\n", operation.value)).as_str();
+                        c_code += format(format_args!("    stack[stackPointer++] = ops{}[i];\n", counter)).as_str();
+                        c_code += format(format_args!("}}\n")).as_str();
+                        c_code += format(format_args!("free(ops{});\n", counter)).as_str();
+                        var_name_counter += 1;
                     }
                     OpCode::OpDup => {
                         let counter1 = var_name_counter;
@@ -235,7 +238,14 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                     }
                     OpCode::OpPush => {
                         if operation.name.len() > 0 {
-                            c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.name)).as_str();
+                            if operation.is_constant {
+                                c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.name)).as_str();
+                            } else {
+                                c_code += format(format_args!("memcpy((void*)&memory[stringSectionPointer], \"{}\", {});\n", operation.name, operation.name.len())).as_str();
+                                c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.name.len())).as_str();
+                                c_code += format(format_args!("stack[stackPointer++] = stringSectionPointer;\n")).as_str();
+                                c_code += format(format_args!("stringSectionPointer += {};\n", operation.name.len())).as_str();
+                            }
                         } else {
                             c_code += format(format_args!("stack[stackPointer++] = {};\n", operation.value)).as_str();
                         }

@@ -8,6 +8,7 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
     let operations = &program.operations;
     let mut stack: Vec<i64> = vec![];
     let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
+    let mut string_section_pointer: usize = 0;
 
     let mut program_counter: usize = program.labels.get("main").ok_or(Error{ message: "Missing main label".to_string() })?.location;
     while program_counter < operations.len() {
@@ -131,13 +132,15 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 stack.push(op1);
                 stack.push(op2);
             }
-            OpCode::OpRot => {
-                let op1 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
-                let op2 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
-                let op3 = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
-                stack.push(op1);
-                stack.push(op3);
-                stack.push(op2);
+            OpCode::OpRoll => {
+                let mut ops: Vec<i64> = vec![];
+                for _ in 0..operation.value {
+                    ops.push(stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
+                }
+                stack.push(*ops.get(0).ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
+                for _ in 1..ops.len() {
+                    stack.push(ops.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
+                }
             }
             OpCode::OpDup => {
                 let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
@@ -231,8 +234,18 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
             }
             OpCode::OpPush => {
                 if operation.name.len() > 0 {
-                    let value = *program.constants.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown constant: {}", program_counter, operation.name)) })?;
-                    stack.push(value);
+                    if operation.is_constant {
+                        let value = *program.constants.get(&operation.name).ok_or(Error{ message: format(format_args!("[line: {}] Unknown constant: {}", program_counter, operation.name)) })?;
+                        stack.push(value);
+                    } else {
+                        let string_value = &operation.name;
+                        for (index, byte) in string_value.bytes().enumerate() {
+                            memory[string_section_pointer + index] = byte;
+                        }
+                        stack.push(string_value.len() as i64);
+                        stack.push(string_section_pointer as i64);
+                        string_section_pointer += string_value.len();
+                    }
                 } else {
                     stack.push(operation.value);
                 }

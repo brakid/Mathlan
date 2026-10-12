@@ -32,7 +32,7 @@ pub enum OpCode {
     OpElse,
     OpEnd,
     OpSwap,
-    OpRot,
+    OpRoll,
     OpDup,
     OpDrop,
     OpJmp,
@@ -50,6 +50,7 @@ pub struct Operation {
     pub op_code: OpCode,
     pub value: i64, // Standard: 0
     pub name: String, // Standard: ""
+    pub is_constant: bool, // Standard: false
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

@@ -1,0 +1,4 @@
+!include stdlib.mln
+
+main:
+    "Hello" printText call
