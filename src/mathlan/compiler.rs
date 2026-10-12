@@ -168,18 +168,11 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                     }
                     OpCode::OpRoll => {
                         let counter1 = var_name_counter;
-                        let counter2 = var_name_counter + 1;
-                        c_code += format(format_args!("int64_t* ops{} = malloc(sizeof(int64_t) * {});\n", counter1, operation.value)).as_str();
-                        c_code += format(format_args!("for (int i = 0; i < {}; i++) {{\n", operation.value)).as_str();
-                        c_code += format(format_args!("    ops{}[i] = stack[--stackPointer];\n", counter1)).as_str();
+                        c_code += format(format_args!("int64_t oldest_op{} = stack[stackPointer - {}];\n", counter1, operation.value)).as_str();
+                        c_code += format(format_args!("for (int i = {} - 1; i > 0; i--) {{\n", operation.value)).as_str();
+                        c_code += format(format_args!("    stack[stackPointer - i - 1] = stack[stackPointer - i];\n")).as_str();
                         c_code += format(format_args!("}}\n")).as_str();
-                        c_code += format(format_args!("int64_t oldest_op{} = ops{}[{} - 1];\n", counter2, counter1, operation.value)).as_str();
-                        c_code += format(format_args!("for (int i = {} - 2; i >= 0; i--) {{\n", operation.value)).as_str();
-                        c_code += format(format_args!("    stack[stackPointer++] = ops{}[i];\n", counter1)).as_str();
-                        c_code += format(format_args!("}}\n")).as_str();
-                        c_code += format(format_args!("stack[stackPointer++] = oldest_op{};\n", counter2)).as_str();
-                        
-                        c_code += format(format_args!("free(ops{});\n", counter1)).as_str();
+                        c_code += format(format_args!("stack[stackPointer - 1] = oldest_op{};\n", counter1)).as_str();
                         var_name_counter += 1;
                     }
                     OpCode::OpDup => {

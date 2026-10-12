@@ -133,15 +133,17 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                 stack.push(op2);
             }
             OpCode::OpRoll => {
-                let mut ops: Vec<i64> = vec![];
-                for _ in 0..operation.value {
-                    ops.push(stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
+                let n = operation.value as usize;
+                if n > 1 {
+                    if stack.len() < n {
+                        return Err(Box::new(Error { message: format!("[line: {}] Not enough values on the stack: {}", program_counter, n) }));
+                    }
+
+                    let oldest_op_index = stack.len() - n;
+                    let oldest_op = stack.remove(oldest_op_index);
+
+                    stack.push(oldest_op);
                 }
-                let oldest_op = ops.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
-                for _ in 0..ops.len() {
-                    stack.push(ops.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?);
-                }
-                stack.push(oldest_op);
             }
             OpCode::OpDup => {
                 let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
