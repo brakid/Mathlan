@@ -26,16 +26,16 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                 break;
             }
             match op_code {
-                "+" => operations.push(Operation { op_code: OpCode::OpAdd, ..Operation::default() }),
-                "-" => operations.push(Operation { op_code: OpCode::OpSub, ..Operation::default() }),
-                "*" => operations.push(Operation { op_code: OpCode::OpMul, ..Operation::default() }),
-                "/" => operations.push(Operation { op_code: OpCode::OpDiv, ..Operation::default() }),
-                "%" => operations.push(Operation { op_code: OpCode::OpMod, ..Operation::default() }),
+                "add" | "+" => operations.push(Operation { op_code: OpCode::OpAdd, ..Operation::default() }),
+                "sub" | "-" => operations.push(Operation { op_code: OpCode::OpSub, ..Operation::default() }),
+                "mul" | "*" => operations.push(Operation { op_code: OpCode::OpMul, ..Operation::default() }),
+                "div" | "/" => operations.push(Operation { op_code: OpCode::OpDiv, ..Operation::default() }),
+                "mod" | "%" => operations.push(Operation { op_code: OpCode::OpMod, ..Operation::default() }),
                 "<" => operations.push(Operation { op_code: OpCode::OpSmaller, ..Operation::default() }),
                 "=" => operations.push(Operation { op_code: OpCode::OpEqual, ..Operation::default() }),
                 ">" => operations.push(Operation { op_code: OpCode::OpLarger, ..Operation::default() }),
-                "&&" => operations.push(Operation { op_code: OpCode::OpAnd, ..Operation::default() }),
-                "||" => operations.push(Operation { op_code: OpCode::OpOr, ..Operation::default() }),
+                "and" | "&&" => operations.push(Operation { op_code: OpCode::OpAnd, ..Operation::default() }),
+                "or" | "||" => operations.push(Operation { op_code: OpCode::OpOr, ..Operation::default() }),
                 "not" => operations.push(Operation { op_code: OpCode::OpNot, ..Operation::default() }),
                 "if" => operations.push(Operation { op_code: OpCode::OpIf, ..Operation::default() }),
                 "else" => operations.push(Operation { op_code: OpCode::OpElse, ..Operation::default() }),
