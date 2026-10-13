@@ -145,10 +145,15 @@ pub fn execute(program: &Program, verbose: bool) -> Result<(), Box<dyn std::erro
                     stack.push(oldest_op);
                 }
             }
-            OpCode::OpDup => {
-                let op = stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
-                stack.push(op);
-                stack.push(op);
+            OpCode::OpPull => {
+                let n = operation.value as usize;
+                if stack.len() - 1 < n {
+                    return Err(Box::new(Error { message: format!("[line: {}] Not enough values on the stack: {}", program_counter, n) }));
+                }
+                let pull_op_index = stack.len() - 1 - n;
+                let pull_op = *stack.get(pull_op_index).ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;
+
+                stack.push(pull_op);
             }
             OpCode::OpDrop => {
                 stack.pop().ok_or(Error{ message: format(format_args!("[line: {}] No value on stack", program_counter)) })?;

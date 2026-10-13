@@ -49,7 +49,14 @@ pub fn parse(program_code: &str) -> Result<Program, Error> {
                     }
                     operations.push(Operation { op_code: OpCode::OpRoll, value: prev_op_code.value, ..Operation::default() });
                 },
-                "dup" => operations.push(Operation { op_code: OpCode::OpDup, ..Operation::default() }),
+                "pull" => {
+                    let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;
+                    if prev_op_code.op_code != OpCode::OpPush && prev_op_code.name != "" {
+                        return Err(Error { message: format(format_args!("[line: {}, token index: {}] Expected previous op_code to be a push of a number", line_index, index)) });
+                    }
+                    operations.push(Operation { op_code: OpCode::OpPull, value: prev_op_code.value, ..Operation::default() });
+                },
+                "dup" => operations.push(Operation { op_code: OpCode::OpPull, value: 0, ..Operation::default() }),
                 "drop" => operations.push(Operation { op_code: OpCode::OpDrop, ..Operation::default() }),
                 "jump" => {
                     let prev_op_code = operations.pop().ok_or(Error{ message: format(format_args!("[line: {}, token index: {}] No preceeding op_code found", line_index, index)) })?;

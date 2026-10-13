@@ -33,7 +33,7 @@ pub enum OpCode {
     OpEnd,
     OpSwap,
     OpRoll,
-    OpDup,
+    OpPull,
     OpDrop,
     OpJmp,
     OpCall,

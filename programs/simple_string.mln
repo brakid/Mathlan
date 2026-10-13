@@ -1,0 +1,28 @@
+!include stdlib.mln
+
+main:
+    initMemory call
+    1 dup allocateMemory call #[str1len str1addr]
+    dup #[str1len str1addr str1addr]
+    dup print #1008
+    32 #[str1len str1addr str1addr value]
+    swap #[str1len str1addr value str1addr]
+    store #[str1len str1addr]
+    "not" #[str1len str1addr str2len str2addr]
+    3 pull #[str1len str1addr str2len str2addr str1len]
+    2 pull #[str1len str1addr str2len str2addr str1len str2len]
+    + #[str1len str1addr str2len str2addr str3len]
+    allocateMemory call #[str1len str1addr str2len str2addr str3addr]
+    dup print #1009
+    5 roll #[str1addr str2len str2addr str3addr str1len]
+    5 roll #[str2len str2addr str3addr str1len str1addr]
+    5 roll #[str2addr str3addr str1len str1addr str2len]
+    5 roll #[str3addr str1len str1addr str2len str2addr]
+    4 pull #[str3addr str1len str1addr str2len str2addr str3addr]
+    concatText call #[str3addr str3len]
+    swap #[str3len str3addr]
+    1 pull #[str3len str3addr str3len]
+    1 pull #[str3len str3addr str3len str3addr]
+    printText call #[str3len str3addr]
+    print #[str3len] #1009
+    print #[] #4
