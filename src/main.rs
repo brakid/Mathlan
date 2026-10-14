@@ -4,10 +4,12 @@ use std::fs::write;
 use std::env;
 use std::path::Path;
 
+use mathlan::lib::Error;
 use mathlan::compiler::compile;
 use mathlan::virtualmachine::execute;
 use mathlan::parser::parse;
 use mathlan::preprocessor::load_program;
+use subprocess::Exec;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -62,10 +64,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let c_code = compile(&program, verbose)?;
         let file = Path::new(&path).file_name().unwrap().to_str().unwrap().split(".").next().unwrap();
         let output_directory = "./compiled/";
-        let output_path = Path::new(output_directory).join(file.to_string() + ".c");
-        let output_path = output_path.to_str().unwrap();
-        println!("Written output to: {}", output_path);
-        write(output_path, c_code)?;
+        let code_path = Path::new(output_directory).join(file.to_string() + ".c");
+        let code_path = code_path.to_str().unwrap();
+        let executable_path = Path::new(output_directory).join(file.to_string());
+        let executable_path = executable_path.to_str().unwrap();
+        println!("Written output to: {}", code_path);
+        write(code_path, c_code)?;
+        let status = Exec::cmd("gcc").arg("-Wall").arg("-Wextra").arg("-O3").arg("-o").arg(executable_path).arg(code_path).join()?;
+        if status.success() {
+            println!("Compiled to: {}", executable_path);
+        } else {
+            println!("Compilation of {} failed", executable_path);
+            return Err(Box::new(Error{ message: "Compilation failed".to_string() }));
+        }
     }
 
     Ok(())
