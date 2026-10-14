@@ -5,18 +5,18 @@ use super::lib::{Error, LabelType::{Call, Jump}, OpCode, Program};
 pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::error::Error>> {
     let operations = &program.operations;
     let mut c_code = String::new();
-    c_code += "#include <stdio.h>\n";
-    c_code += "#include <stdint.h>\n";
-    c_code += "#include <stdlib.h>\n";
-    c_code += "#include <math.h>\n";
-    c_code += "#include <string.h>\n";
-    c_code += "#include <assert.h>\n";
-    c_code += "#define STACK_SIZE 16000\n";
-    c_code += "#define MEMORY_SIZE 16000\n";
-    c_code += "int64_t stack[STACK_SIZE];\n";
-    c_code += "size_t stackPointer = 0;\n";
-    c_code += "uint8_t memory[MEMORY_SIZE];\n";
-    c_code += "size_t stringSectionPointer = 0;\n";
+    c_code += format(format_args!("#include <stdio.h>\n")).as_str();
+    c_code += format(format_args!("#include <stdint.h>\n")).as_str();
+    c_code += format(format_args!("#include <stdlib.h>\n")).as_str();
+    c_code += format(format_args!("#include <math.h>\n")).as_str();
+    c_code += format(format_args!("#include <string.h>\n")).as_str();
+    c_code += format(format_args!("#include <assert.h>\n")).as_str();
+    c_code += format(format_args!("#define STACK_SIZE 100000\n")).as_str();
+    c_code += format(format_args!("#define MEMORY_SIZE 100000\n")).as_str();
+    c_code += format(format_args!("int64_t *stack;\n")).as_str();
+    c_code += format(format_args!("size_t stackPointer = 0;\n")).as_str();
+    c_code += format(format_args!("uint8_t *memory;\n")).as_str();
+    c_code += format(format_args!("size_t stringSectionPointer = 0;\n")).as_str();
 
     let mut jump_labels_by_index: HashMap<i64, String> = HashMap::new();
     for (_, (label_name, label)) in program.labels.iter().enumerate() {
@@ -47,6 +47,10 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                     println!("Processing main");
                 }
                 c_code += format(format_args!("int {}() {{\n", label_name)).as_str();
+                c_code += format(format_args!("stack = (int64_t *)calloc(STACK_SIZE, sizeof(int64_t));\n")).as_str();
+                c_code += format(format_args!("assert(stack != 0);\n")).as_str();
+                c_code += format(format_args!("memory = (uint8_t *)calloc(MEMORY_SIZE, sizeof(uint8_t));\n")).as_str();
+                c_code += format(format_args!("assert(memory != 0);\n")).as_str();
             } else {        
                 c_code += format(format_args!("void {}() {{\n", label_name)).as_str();
             }
@@ -161,13 +165,13 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                     }
                     OpCode::OpIf => {
                         c_code += format(format_args!("assert(stackPointer >= 2);\n")).as_str();
-                        c_code += "if (stack[--stackPointer]) {\n";
+                        c_code += format(format_args!("if (stack[--stackPointer]) {{\n")).as_str();
                     }
                     OpCode::OpElse => {
-                        c_code += "} else {\n";
+                        c_code += format(format_args!("}} else {{\n")).as_str();
                     }
                     OpCode::OpEnd => {
-                        c_code += "}\n";
+                        c_code += format(format_args!("}}\n")).as_str();
                     }
                     OpCode::OpSwap => {
                         let counter1 = var_name_counter;
@@ -202,19 +206,19 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                     }
                     OpCode::OpDrop => {
                         c_code += format(format_args!("assert(stackPointer > 0);\n")).as_str();
-                        c_code += "--stackPointer;\n";
+                        c_code += format(format_args!("--stackPointer;\n")).as_str();
                     }
                     OpCode::OpJmp => {
                         c_code += format(format_args!("goto {};\n", operation.name)).as_str();
                     }
                     OpCode::OpRet => {
                         c_code += format(format_args!("assert(stackPointer > 0);\n")).as_str();
-                        c_code += "stackPointer--;\n"; // ignore return address
-                        c_code += "return; }\n";
+                        c_code += format(format_args!("stackPointer--;\n")).as_str(); // ignore return address
+                        c_code += format(format_args!("return; }}\n")).as_str();
                         break;
                     }
                     OpCode::OpCall => {
-                        c_code += "stack[stackPointer++] = 0xDEAD;\n";
+                        c_code += format(format_args!("stack[stackPointer++] = 0xDEAD;\n")).as_str();
                         c_code += format(format_args!("{}();\n", operation.name)).as_str();
                     }
                     OpCode::OpStore => {
@@ -271,7 +275,7 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
                         }
                     }
                     OpCode::OpHalt => {
-                        c_code += "exit(0);\n"
+                        c_code += format(format_args!("exit(0);\n")).as_str();
                     }
                     OpCode::OpWord => {
                         match operation.name.as_str() {
@@ -310,7 +314,9 @@ pub fn compile(program: &Program, verbose: bool) -> Result<String, Box<dyn std::
             }
         }
         if label_name == "main" {
-            c_code += "return 0; }\n";
+            c_code += format(format_args!("free(stack);\n")).as_str();
+            c_code += format(format_args!("free(memory);\n")).as_str();
+            c_code += format(format_args!("return 0; }}\n")).as_str();
         }
     }
 
